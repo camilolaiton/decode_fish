@@ -15,7 +15,7 @@ dependencies:
   - matplotlib
   - pandas
   - pyyaml
-  - scipy=1.8.1
+  - scipy
   - scikit-image=0.19.3
   - seaborn=0.10
   - tifffile>=2020.2
