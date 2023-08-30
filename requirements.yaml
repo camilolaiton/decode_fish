@@ -28,6 +28,8 @@ dependencies:
       - hydra-core=1.2.0
       - numba=0.55.2
       - scikit-learn=1.1.1
+      - kornia=0.5.4
+      - git+https://github.com/pvigier/perlin-numpy
 
   # add kernel to jupyter
   - ipykernel
