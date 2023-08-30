@@ -10,25 +10,25 @@ dependencies:
   - pip
   - pytorch=1.7.1
   - cudatoolkit=10.1
-  - torchvision=0.12.0
-  - h5py=3.7.0
+  - torchvision
+  - h5py
   - matplotlib
   - pandas
   - pyyaml
   - scipy
-  - scikit-image=0.19.3
-  - seaborn=0.10
+  - scikit-image
+  - seaborn
   - tifffile>=2020.2
   - tqdm
 #   - hydra-core
   - pip:
-      - nbdev=1.2.10
-      - monai=0.9.0
-      - wandb=0.12.19
-      - hydra-core=1.2.0
-      - numba=0.55.2
+      - nbdev
+      - monai
+      - wandb
+      - hydra-core
+      - numba
       - scikit-learn=1.1.1
-      - kornia=0.5.4
+      - kornia
       - git+https://github.com/pvigier/perlin-numpy
 
   # add kernel to jupyter
