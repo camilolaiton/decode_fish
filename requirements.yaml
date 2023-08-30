@@ -1,4 +1,4 @@
-name: decode_fish_dev2
+name: decode_fish_dev
 
 channels:
   - pytorch
@@ -27,7 +27,7 @@ dependencies:
       - wandb
       - hydra-core
       - numba
-      - sklearn
+      - scikit-learn
 
   # add kernel to jupyter
   - ipykernel
