@@ -9,7 +9,7 @@ dependencies:
   - python=3.7
   - pip
   - pytorch=1.7.1
-  - cudatoolkit=10.1
+  - cudatoolkit=11.1
   - torchvision
   - h5py
   - matplotlib
