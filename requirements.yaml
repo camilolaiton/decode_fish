@@ -5,11 +5,11 @@ channels:
   - defaults
   
 dependencies:
-# jun 24 2022
-  - python=3.7
+# jun 24 2022 =1.7.1
+  - python=3.8
   - pip
-  - pytorch=1.7.1
-  - cudatoolkit=11.1
+  - pytorch
+  - cudatoolkit=11.0
   - torchvision
   - h5py
   - matplotlib
