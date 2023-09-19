@@ -38,7 +38,6 @@ def get_simulation_statistics(decode_dl, micro, point_process, int_threshold=1, 
             x = cpu(ret_dict['x'] * micro.get_ch_mult().detach())
 
             rand_ch = np.random.randint(0,x.shape[1])
-
             sim_vars = point_process.sample(ret_dict['local_rate'][:,0], from_code_book=False)
             ch_inp = micro.get_single_ch_inputs(*sim_vars[:-1])
             xsim = micro(*ch_inp)

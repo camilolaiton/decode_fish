@@ -4,7 +4,7 @@ __all__ = ['PointProcessUniform', 'list_to_locations', 'get_phased_ints']
 
 # Cell
 from ..imports import *
-from torch import distributions as D, Tensor
+from torch import distributions as D
 from torch.distributions import Distribution
 from ..funcs.utils import *
 
@@ -84,9 +84,9 @@ class PointProcessUniform(Distribution):
             z_offset *= 0
 
         locations = locations.nonzero(as_tuple=False)
-
+        code_draw = None
+        
         if self.n_channels > 1:
-            code_draw = None
             if from_code_book:
 
                 code_draw = torch.multinomial(self.code_weight, num_samples=n_emitter, replacement=True)
@@ -99,9 +99,11 @@ class PointProcessUniform(Distribution):
                 ch_draw.scatter_(index=m_draw.to(self.device), dim=1, value=1)
 
             intensities = intensities.to(self.device) * ch_draw.to(self.device)
-            output_shape.insert(1, self.n_channels)
 
-        return locations, x_offset, y_offset, z_offset, intensities, tuple(output_shape), code_draw
+        output_shape.insert(1, self.n_channels)
+        output_shape = tuple(output_shape)
+
+        return locations, x_offset, y_offset, z_offset, intensities, output_shape, code_draw
 
 
 def list_to_locations(locations, output_shape):

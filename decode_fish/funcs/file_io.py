@@ -29,11 +29,21 @@ def add_df_to_hdf5(parent, name, df):
         g.create_dataset(k, data=df[k].values)
 
 # Cell
-def load_psf_noise_micro(cfg):
+def load_psf_noise_micro(cfg:dict) -> Microscope:
+    """
+    Loads PSF, noise and microscope
+    configurations using the provided
+    configuration derived from the
+    base train.yaml file.
+    """
 
     psf = hydra.utils.instantiate(cfg.genm.PSF)
     noise = hydra.utils.instantiate(cfg.genm.noise)
-    micro = hydra.utils.instantiate(cfg.genm.microscope, psf=psf, noise=noise).cuda()
+    micro = hydra.utils.instantiate(
+        cfg.genm.microscope,
+        psf=psf,
+        noise=noise
+    ).to("cuda:0")
 
     return micro
 
@@ -62,7 +72,10 @@ def get_dataloader(cfg):
         if imgs_5d.ndim > 5:
             imgs_5d = imgs_5d.view(-1, *(imgs_5d.size()[2:]))
 
-        imgs_5d       = torch.cat([img.permute(*cfg.data_path.image_proc.swap_dim)[sl][None] for img in imgs_5d], 0)
+        # Fix in getting data for 5D
+        swap_dims = cfg.data_path.image_proc.swap_dim[:-1]
+        sl_ = sl[1:]
+        imgs_5d       = torch.cat([img.permute(*swap_dims)[sl_][None] for img in imgs_5d], 0)[np.newaxis, ...]
         roi_masks     = [get_roi_mask(img, tuple(cfg.sim.roi_mask.pool_size), percentile= cfg.sim.roi_mask.percentile) for img in imgs_5d]
     else:
         imgs_5d       = torch.cat([torch.empty(list(cfg.data_path.image_sim.image_shape))], 0)

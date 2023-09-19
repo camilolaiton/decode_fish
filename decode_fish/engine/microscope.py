@@ -12,6 +12,8 @@ from typing import Union, List
 import torch.nn.functional as F
 from .place_psfs import CudaPlaceROI
 import kornia
+from scipy.spatial.distance import cdist
+from scipy.spatial import KDTree
 
 # Cell
 class Microscope(nn.Module):
@@ -149,22 +151,25 @@ class Microscope(nn.Module):
         # Identify channels by looking for nonzero intensities
         ch_inds = i_val.nonzero(as_tuple=True)
 
-        if len(ch_inds[1]):
-            if ch_inds[1].max() > 0:
+        if len(ch_inds[1]) and ch_inds[1].max() > 0:
 
-                i_val = i_val[ch_inds]
+            i_val = i_val[ch_inds]
 
-                locations = [l[ch_inds[0]] for l in locations]
-                locations.insert(1,ch_inds[1])
+            locations = [l[ch_inds[0]] for l in locations]
+            locations.insert(1,ch_inds[1])
 
-                x_os_val, y_os_val, z_os_val = self.apply_channel_shifts(ch_inds, x_os_val, y_os_val, z_os_val)
+            x_os_val, y_os_val, z_os_val = self.apply_channel_shifts(ch_inds, x_os_val, y_os_val, z_os_val)
 
-                if self.col_shifts_enabled and ycrop is not None:
+            if self.col_shifts_enabled and ycrop is not None:
 
-                    x_os_val, y_os_val = self.apply_color_shifts(ch_inds, locations, x_os_val, y_os_val, ycrop, xcrop)
+                x_os_val, y_os_val = self.apply_color_shifts(ch_inds, locations, x_os_val, y_os_val, ycrop, xcrop)
 
         else:
             locations.insert(1,locations[0])
+            # Squeezing array if comes with extra dim
+            i_val = torch.squeeze(i_val)
+            # For single channel add extra dim in the middle
+            output_shape = list(output_shape)
 
         return locations, x_os_val, y_os_val, z_os_val, i_val, output_shape
 
@@ -202,7 +207,6 @@ class Microscope(nn.Module):
                 psf = self.add_psf_noise(psf)
 
             tot_intensity = torch.clamp_min(i_val, 0)
-
             psf_sc = psf * tot_intensity[:,None,None,None,None]
 
             if ret_psfs:
@@ -234,16 +238,14 @@ def place_psf(locations, psf_volume, output_shape):
     Returns:
         placed_psf: torch.Tensor with shape (BS, C, H, W, D)
     """
-
     b, c, z, y, x = locations
     # Deprecated python loop
 #     placed_psf = _place_psf(psf_volume, b, c, z, y, x, torch.tensor(output_shape))
-
     # New fancy cuda loop
     N_psfs, _, psf_s_z, psf_s_y, psf_s_x = psf_volume.shape
     placed_psf = CudaPlaceROI.apply(psf_volume[:,0], output_shape[0], output_shape[1], output_shape[2], output_shape[3], output_shape[4], N_psfs, psf_s_z, psf_s_y, psf_s_x, b, c, z-psf_s_z//2, y-psf_s_y//2, x-psf_s_x//2)
 
-    assert placed_psf.shape == output_shape
+    assert placed_psf.shape == tuple(output_shape)
     return placed_psf
 
 def extract_psf_roi(locations, x_vol, roi_shape):
@@ -255,9 +257,6 @@ def extract_psf_roi(locations, x_vol, roi_shape):
     rois = _extract_psf_roi(x_vol, batch, ch, z, y, x, roi_shape)
 
     return rois
-
-from scipy.spatial.distance import cdist
-from scipy.spatial import KDTree
 
 def get_roi_filt_inds(batch, ch, z, y, x, psf_shape, vol_shape, min_dist=None, slice_rec=False):
     """

@@ -6,8 +6,8 @@ __all__ = ['GammaNoise']
 from ..imports import *
 from torch import nn
 from torch import distributions as D
+from typing import Optional, List
 from ..funcs.utils import *
-import scipy.stats as stats
 
 # Cell
 class GammaNoise(nn.Module):
@@ -18,28 +18,52 @@ class GammaNoise(nn.Module):
     Theta can be learned (but not the baseline)
 
     Args:
-        theta (float): 1/theta gives the rate for torch.distributions.gamma
-        baseline (float): baseline (currently not used)
+        theta (Optional[float]): 1/theta gives the rate for torch.distributions.gamma
+        baseline (Optional[float]): baseline (currently not used)
+        n_channels (Optional[int]): Number of channels to be used
 
     """
-    def __init__(self, theta = 3., baseline = 0., n_channels = 0):
+    def __init__(
+        self,
+        theta:Optional[float] = 3.0,
+        baseline:Optional[float] = 0.0,
+        n_channels:Optional[int] = 0
+    ):
 
         super().__init__()
+        self.theta_scale = torch.tensor(theta)
+
+        if n_channels < 0:
+            raise ValueError("Provide the correct number of channels")
 
         if n_channels > 1:
-            self.theta_scale = torch.tensor(theta)
             self.theta_par = torch.nn.Parameter(torch.ones(n_channels))
         else:
-            self.theta_scale = theta
-            self.theta_par = torch.nn.Parameter(torch.tensor(1.))
+            self.theta_par = torch.nn.Parameter(torch.ones(1))
 
         self.baseline = baseline
         self.n_channels = n_channels
 
-    def forward(self, x_sim, background, ch_inds=None, randomize_range=None):
-        """ Calculates the concentration (mean / theta) of a Gamma distribution given
+    def forward(self,
+        x_sim: torch.Tensor,
+        background: torch.Tensor,
+        ch_inds:List[int]=None,
+        randomize_range: List[float]=None
+    ):
+        """
+        Calculates the concentration (mean / theta) of a Gamma distribution given
         the signal x_sim and background tensors.
-        Also applies a shift and returns resulting the Gamma distribution
+        Also applies a shift and returns resulting the Gamma distribution.
+
+        Args:
+            x_sim (torch.Tensor): Tensor with to build simulation data
+            represented as (Emitters, N_channels, X, Y, Z).
+            background (torch.Tensor): Estimated background represented as
+            (Emitters, N_channels, X, Y, Z)
+            ch_inds (list): Channel indexes
+            randomize_range (list): Range to sample random noise in
+            an uniform distribution.
+
         """
 
         theta = (self.theta_scale.to(self.theta_par.device) * self.theta_par)
