@@ -48,12 +48,13 @@ class Microscope(nn.Module):
     """
 
 
-    def __init__(self, psf, noise, scale = 10000., norm='none', psf_noise=0, slice_rec=False, ch_facs=None, ch_cols=None, col_shifts_enabled=False, col_shifts_yxds=None):
+    def __init__(self, psf, noise, scale = 10000., norm='none', psf_noise=0, slice_rec=False, ch_facs=None, ch_cols=None, col_shifts_enabled=False, col_shifts_yxds=None, device:str="cuda:0"):
 
         super().__init__()
 
         self.psf = psf
-        self.psf_init_vol = psf.psf_volume.detach().to('cuda') + 0
+        self.device = device
+        self.psf_init_vol = psf.psf_volume.detach().to(self.device) + 0
         self.psf_z_size = self.psf.psf_volume.shape[-3]
 
         self.scale = scale
@@ -171,7 +172,7 @@ class Microscope(nn.Module):
         '''Locations contains indices for Batch, Channel, Z, Y, X'''
         if len(locations[0]):
             # If multi color get the right color indices dendent on channel indices
-            col_inds=torch.tensor(self.ch_cols)[locations[1]] if self.ch_cols is not None else None
+            col_inds=torch.tensor(self.ch_cols).to(self.device)[locations[1]] if self.ch_cols is not None else None
 
             if self.slice_rec and self.psf_z_size > 1:
                 # If we do slice rec z_os_ch which has a range of [-1,1] (from simulations or network output) is turned into an index for a slice from the psf_volume and a continuous offset
